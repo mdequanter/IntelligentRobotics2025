@@ -1,0 +1,4 @@
+spherov2
+bleak
+pygame
+flask
