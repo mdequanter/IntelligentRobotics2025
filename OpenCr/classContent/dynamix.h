@@ -118,8 +118,8 @@ bool drive(int vel1, int vel2, int duration) {
 
 bool turn(float degrees = 0.0) {
 
-  float currentYaw = 0;
-  float initialYaw = currentYaw;
+  float currentYaw = getYaw();
+  float initialYaw = 0;
 
   float goalYaw = initialYaw + degrees;
 
