@@ -116,3 +116,35 @@ bool drive(int vel1, int vel2, int duration) {
 }
 
 
+bool turn(float degrees = 0.0) {
+
+  float currentYaw = 0;
+  float initialYaw = currentYaw;
+
+  float goalYaw = initialYaw + degrees;
+
+  // turn CW
+  if (goalYaw > 0) {
+    setVelocity(-50,50);  
+    Serial.println("turn CW");
+    while (currentYaw <= goalYaw) {
+      currentYaw = getYaw();
+      delay(20);
+    }
+    setVelocity(0,0);
+    return true;
+  }
+  //turn CCW 
+  if (goalYaw < 0) {
+    setVelocity(50,-50);  
+    Serial.println("turn CCW");
+    while (currentYaw >= goalYaw) {
+      currentYaw = getYaw();
+      delay(20);
+    }
+    setVelocity(0,0);
+    return true;
+  }
+}
+
+

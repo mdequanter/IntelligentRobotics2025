@@ -74,12 +74,18 @@ void loop() {
       delay(1000);
     }
 
-    velocity = drive(50,-50,1);
-    velocity = drive(0,0,1);
-    velocity = drive(-50,50,1);
+    //velocity = drive(50,-50,1);
+    //velocity = drive(0,0,1);
+    //velocity = drive(-50,50,1);
+
+    Serial.println("Turn clockwise");
+    turn(90);
+    delay(500);
+    Serial.println("Turn counterClockwise");
+    turn(-90);
 
 
-
+    printIMU();
     delay(1000);  
 
 }
