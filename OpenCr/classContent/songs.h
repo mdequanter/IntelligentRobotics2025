@@ -4,24 +4,24 @@
 // notes in the melody:
 // Notes for "Happy Birthday"
 int HappyBirthday[] = {
-  NOTE_C4, NOTE_C4, NOTE_D4, NOTE_C4, NOTE_F4, NOTE_E4,  // Happy Birthday to You
-  NOTE_C4, NOTE_C4, NOTE_D4, NOTE_C4, NOTE_G4, NOTE_F4,  // Happy Birthday to You
-  NOTE_C4, NOTE_C4, NOTE_C5, NOTE_A4, NOTE_F4, NOTE_E4, NOTE_D4, // Happy Birthday dear [name]
-  NOTE_AS4, NOTE_AS4, NOTE_A4, NOTE_F4, NOTE_G4, NOTE_F4  // Happy Birthday to You
+  NOTE_C4, NOTE_C4, NOTE_D4, NOTE_C4, NOTE_F4, NOTE_E4  // Happy Birthday to You
+  //NOTE_C4, NOTE_C4, NOTE_D4, NOTE_C4, NOTE_G4, NOTE_F4,  // Happy Birthday to You
+  //NOTE_C4, NOTE_C4, NOTE_C5, NOTE_A4, NOTE_F4, NOTE_E4, NOTE_D4, // Happy Birthday dear [name]
+  //NOTE_AS4, NOTE_AS4, NOTE_A4, NOTE_F4, NOTE_G4, NOTE_F4  // Happy Birthday to You
 };
 
 // Note durations: 4 = quarter note, 8 = eighth note, etc.
 int noteDurations_HappyBirthday[] = {
-  8, 8, 4, 4, 4, 2,
-  8, 8, 4, 4, 4, 2,
-  8, 8, 4, 4, 4, 4, 2,
   8, 8, 4, 4, 4, 2
+  //8, 8, 4, 4, 4, 2,
+  //8, 8, 4, 4, 4, 4, 2,
+  //8, 8, 4, 4, 4, 2
 };
 
 
 void playSequence(int melody[], int noteDurations[]){
   // iterate over the notes of the melody:
-  for (int thisNote = 0; thisNote < 25; thisNote++) {
+  for (int thisNote = 0; thisNote < 6; thisNote++) {
 
     // to calculate the note duration, take one second
     // divided by the note type.

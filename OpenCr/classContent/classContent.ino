@@ -39,11 +39,17 @@ bool checkCriticalBattery(){
   return false;
 }
 
-void loop() {
 
+void printIMU(){
     float roll = getRoll();
     float yaw = getYaw();
     float pitch = getPitch();
+    Serial.println("Roll:" + String(roll) + ",Pitch:" + String(pitch) + ",Yaw:" + String(yaw));
+}
+
+
+void loop() {
+
 
     bool criticalVoltage = false;
 
@@ -59,14 +65,9 @@ void loop() {
       Serial.println("Problems with dynamixels");
       delay(1000);
     }
-    
-    Serial.print("Roll:");
-    Serial.print(roll);
-    Serial.print(",Pitch:");
-    Serial.print(pitch);
-    Serial.print(",Yaw:");
-    Serial.print(yaw);
-    Serial.print(",Voltage:");
-    Serial.println(voltage);
-    delay(100);  
+
+    printIMU();
+    Serial.println("Voltage: " + String(voltage) + " V");
+
+    delay(1000);  
 }
