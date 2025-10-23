@@ -14,8 +14,6 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Launching IMU");
   IMU.begin();
-  Serial.println("Playing start melody");
-  playSequence(HappyBirthday,noteDurations_HappyBirthday);
   pinMode( led_pin, OUTPUT );
   
   
@@ -24,6 +22,16 @@ void setup() {
   if (dynamixelStarted == false) {
     Serial.println("Dynamixels not initiated.");
   }
+
+  if (dynamixelStarted == true) {
+    setMode(1,0);
+    setMode(2,0);
+    setVelocity(0,0);
+  }
+
+  Serial.println("Playing start melody");
+  playSequence(HappyBirthday,noteDurations_HappyBirthday);
+
 
 }
 
@@ -50,8 +58,8 @@ void printIMU(){
 
 void loop() {
 
-
     bool criticalVoltage = false;
+    int velocity = true;
 
     float voltage = getBatteryVoltage();
     
@@ -66,8 +74,12 @@ void loop() {
       delay(1000);
     }
 
-    printIMU();
-    Serial.println("Voltage: " + String(voltage) + " V");
+    velocity = drive(50,-50,1);
+    velocity = drive(0,0,1);
+    velocity = drive(-50,50,1);
+
+
 
     delay(1000);  
+
 }
