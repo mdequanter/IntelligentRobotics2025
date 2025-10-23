@@ -28,7 +28,7 @@
 
 DynamixelWorkbench dxl_wb;
 
-void setup() 
+bool checkDynamixel() 
 {
   Serial.begin(57600);
   while(!Serial); // Wait for Opening Serial Monitor
@@ -49,7 +49,7 @@ void setup()
   else
   {
     Serial.print("Succeeded to init : ");
-    Serial.println(BAUDRATE);  
+    Serial.println(BAUDRATE);
   }
 
   Serial.println("Wait for scan...");
@@ -57,26 +57,27 @@ void setup()
   if (result == false)
   {
     Serial.println(log);
-    Serial.pri  ntln("Failed to scan");
+    Serial.println("Failed to scan");
+    return false;
   }
   else
   {
     Serial.print("Find ");
     Serial.print(dxl_cnt);
     Serial.println(" Dynamixels");
-
+    int counter = 0;
     for (int cnt = 0; cnt < dxl_cnt; cnt++)
     {
+      counter++;
       Serial.print("id : ");
       Serial.print(scanned_id[cnt]);
       Serial.print(" model name : ");
       Serial.println(dxl_wb.getModelName(scanned_id[cnt]));
     }
+    if (counter >=1) {
+      return true;
+    } else {
+      return false;
+    }
   }  
 }
-
-void loop() 
-{
-
-}
-
