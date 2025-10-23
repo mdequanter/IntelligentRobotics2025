@@ -80,12 +80,6 @@ void loop() {
 
     Serial.println("Turn clockwise");
     turn(90);
-    delay(500);
-    Serial.println("Turn counterClockwise");
-    turn(-90);
-
-
-    printIMU();
     delay(1000);  
 
 }

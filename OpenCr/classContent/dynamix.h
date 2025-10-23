@@ -125,7 +125,7 @@ bool turn(float degrees = 0.0) {
 
   // turn CW
   if (goalYaw > 0) {
-    setVelocity(-50,50);  
+    setVelocity(50,-50);  
     Serial.println("turn CW");
     while (currentYaw <= goalYaw) {
       currentYaw = getYaw();
@@ -136,7 +136,7 @@ bool turn(float degrees = 0.0) {
   }
   //turn CCW 
   if (goalYaw < 0) {
-    setVelocity(50,-50);  
+    setVelocity(-50,50);  
     Serial.println("turn CCW");
     while (currentYaw >= goalYaw) {
       currentYaw = getYaw();
