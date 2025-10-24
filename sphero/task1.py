@@ -1,271 +1,141 @@
-import pygame
-import time
-import sys
+import sys, time, math, argparse
 from spherov2 import scanner
-from spherov2.types import Color
 from spherov2.sphero_edu import SpheroEduAPI
+from spherov2.types import Color
 from spherov2.commands.power import Power
-import math
 
-'''
-SB-9DD8 1
-SB-2BBE 2
-SB-27A5 3
-SB-81E0 4
-SB-7740 5
-'''
+SEGMENTS_CM = [200, 200, 100, 100, 150, 100, 100, 200, 250]     # afstand
+HEADINGS    = [  0,  90, 180, 270, 180,  90, 180, 270,   0]    # richting (graden)
 
-buttons = {
-    '1': 0,
-    '2': 1,
-    '3': 2,
-    '4': 3,
-    'L1': 4,
-    'L2': 6,
-    'R1': 5,
-    'R2': 7,
-    'SELECT': 8,
-    'START': 9
-}
+# SPEED + CM/S
+SPEED_PCT_DEFAULT = 70                     
+CM_PER_SEC_DEFAULT = 41.7                   
+
+# BRAKE
+RAMP = 0.35
+BRAKE = 0.20
+
+# LED
+LED_READY = Color(0, 0, 255)
+LED_RUN   = Color(255, 120, 0)
+LED_OK    = Color(0, 255, 0)
+LED_ERR   = Color(255, 0, 0)
 
 
+def find_toy(name_or_mac: str):
+    toys = scanner.find_toys()
+    for t in toys:
+        if t.name == name_or_mac or getattr(t, "address", "") == name_or_mac:
+            return t
+    return None
 
-class SpheroController:
-    def __init__(self, joystick, color, ball_number):
-        self.toy = None
-        self.speed = 50
-        self.heading = 0
-        self.base_heading = 0
-        self.is_running = True
-        self.calibration_mode = False
-        self.joystick = joystick
-        self.last_command_time = time.time()
-        self.heading_reset_interval = 1
-        self.last_heading_reset_time = time.time()
-        self.threshold_accel_mag = 0.05
-        self.collision_occurred = False
-        self.color = color  # Store the color parameter
-        self.previous_button = 1
-        self.number = ball_number  # Assign the ball number
-        self.gameStartTime = time.time()
-        self.gameOn = False
-        self.boosterCounter = 0
-        self.calibrated = False
+def seconds_for_distance(dist_cm: float, cmps: float) -> float:
+    return max(0.0, dist_cm / max(cmps, 1.0))
 
-        
+def print_battery(api, toy_name: str):
+    try:
+        v = Power.get_battery_voltage(api.toy)
+        print(f"[{toy_name}] Battery: {v:.2f} V")
+        if v <= 3.5:
+            print("Batterie LOW")
+    except Exception:
+        pass
 
-    def discover_nearest_toy(self):
-        try:
-            toys = scanner.find_toys()
-            if not toys:
-                print("Geen Sphero's gevonden.")
-                return
-            self.toy = toys[0]
-            print(f"Dichtstbijzijnde Sphero toy '{self.toy.name}' ontdekt.")            
-            return self.toy.name
-        except Exception as e:
-            print(f"Error no toys nearby: {e}")
-        
+def gentle_roll(api: SpheroEduAPI, heading: int, speed_pct: int, seconds: float):
     
-    def discover_toy(self, toy_name):
-        try:
-            self.toy = scanner.find_toy(toy_name=toy_name)
-            print(f"Sphero toy '{toy_name}' discovered.")
-        except Exception as e:
-            print(f"Error discovering toy: {e}")
-
-    def connect_toy(self):
-        if self.toy is not None:
-            try:
-                return SpheroEduAPI(self.toy)
-            except Exception as e:
-                print(f"Error connecting to toy: {e}")
-        else:
-            print("No toy discovered. Please run discover_toy() first.")
-            return None
-
-    def move(self, api, heading, speed):
-        api.set_heading(heading)
-        api.set_speed(speed)
-
-    def toggle_calibration_mode(self, api, Y):
-        if not self.calibration_mode:
-            self.enter_calibration_mode(api, Y)
-        else:
-            self.exit_calibration_mode(api)
-
-    def enter_calibration_mode(self, api, X):
-        api.set_speed(0)
-        self.gameStartTime = time.time()
-        self.calibration_mode = True
-        self.gameOn = False
-        api.set_front_led(Color(255, 0, 0))
-
-        self.base_heading = api.get_heading()
-
-        if X < -0.7:
-            new_heading = self.base_heading - 5
-        elif X > 0.7:
-            new_heading = self.base_heading + 5
-        else:
-            new_heading = self.base_heading
-
-        api.set_heading(new_heading)
-
-    def exit_calibration_mode(self, api):
-        self.calibrated = True
-        self.calibration_mode = False
-        self.gameOn = True
-        self.boosterCounter = 0
-        self.gameStartTime = time.time()
-        api.set_front_led(Color(0, 255, 0))
-
-    LED_PATTERNS = {
-        1: '1',
-        2: '2',
-        3: '3',
-        4: '4',
-        5: '5'
-    }
-
-    def set_number(self, number):
-        self.number = int(number)
-
-    def display_number(self, api):
-        number_char = self.LED_PATTERNS.get(self.number)
-        if number_char:
-            api.set_matrix_character(number_char, self.color)
-        else:
-            print(f"Error in matrix '{self.number}'")
-
-    def print_battery_level(self, api):
-        battery_voltage = Power.get_battery_voltage(self.toy)
-        print(f"Battery status of {self.number}: {battery_voltage} V ")
-        if (battery_voltage > 4.1):
-            api.set_front_led(Color(r=0, g=255, b=0))
-        if battery_voltage < 4.1 and battery_voltage > 3.9:
-            api.set_front_led(Color(r=255, g=255, b=0))
-        if battery_voltage < 3.9:
-            api.set_front_led(Color(r=255, g=100, b=0))
-        if battery_voltage < 3.7:
-            api.set_front_led(Color(r=255, g=0, b=0))
-        if battery_voltage < 3.5:
-            exit("Battery")
-
-    def control_toy(self):
-        try:
-            with self.connect_toy() as api:
-                last_battery_print_time = time.time()
-                self.set_number(self.number)
-                self.display_number(api)
-                self.enter_calibration_mode(api, 0)
-                self.exit_calibration_mode(api)
-
-                while self.is_running:
-                    pygame.event.pump()
-                    if not self.gameOn:
-                        self.gameStartTime = time.time()                        
-                    current_time2 = time.time()
-                    gameTime = current_time2 - self.gameStartTime    
-
-                    if current_time2 - last_battery_print_time >= 30:
-                        self.print_battery_level(api)
-                        last_battery_print_time = current_time2
-                                                            
-                    if self.gameOn:
-                        acceleration_data = api.get_acceleration()
-                        if acceleration_data is not None:
-                            x_acc = acceleration_data['x']
-                            z_acc = acceleration_data['z']
-                            angle = math.degrees(math.atan2(x_acc, z_acc))
-
-                            if abs(angle) >= 30:
-                                hillCounter += 1
-                                if hillCounter > 10:
-                                    seconds = (current_time2 - self.gameStartTime)
-                                    print(f"Player {self.number} going wild")
-                            else:
-                                hillCounter = 0
-                        else:
-                            print("Acceleration data is not available.")
-                    
-                    X = self.joystick.get_axis(0)
-                    Y = self.joystick.get_axis(1)
-                    #for i in range(self.joystick.get_numbuttons()):
-                    #    button = self.joystick.get_button(i)
-                    #    print(f"Button {i}: {button}")
-
-
-                    if (self.joystick.get_button(buttons['1']) == 1):
-                        self.speed = 50
-                        self.color=Color(r=255, g=200, b=0)
-                        self.display_number(api)
-                    if (self.joystick.get_button(buttons['2']) == 1):
-                        self.speed =70
-                        self.color = Color(r=255, g=100, b=0)
-                        self.display_number(api)
-
-                    if (self.joystick.get_button(buttons['3']) == 1):
-                        self.speed = 100
-                        self.color = Color(r=255, g=50, b=0)
-                        self.display_number(api)
-
-                    if (self.joystick.get_button(buttons['4']) == 1):
-                        self.speed = 200
-                        self.color = Color(r=255, g=0, b=0)
-                        self.display_number(api)
-
-
-
-
-                    if Y < -0.7:
-                        self.move(api, self.base_heading, self.speed)
-                    elif Y > 0.7:
-                            self.move(api, self.base_heading + 180, self.speed)
-                    elif X > 0.7:
-                            self.move(api, self.base_heading + 22, 0)
-                    elif X < -0.7:
-                            self.move(api, self.base_heading - 22, 0)
-                    else:
-                        api.set_speed(0)
-   
-                    self.base_heading = api.get_heading()
-
-        finally:
-            pygame.quit()
-
-def main(toy_name=None, joystickID=0, playerID=1):
-    pygame.init()
-    pygame.joystick.init()
-
-    num_joysticks = pygame.joystick.get_count()
-    if num_joysticks == 0:
-        print("No joysticks found.")
+    if seconds <= 0:
         return
+    # ramp-up
+    api.roll(heading, speed_pct, RAMP)
+    # cruise
+    cruise = max(0.0, seconds - 2*RAMP)
+    if cruise > 0:
+        api.roll(heading, speed_pct, cruise)
+    # ramp-down + petit frein
+    api.roll(heading, max(10, int(0.4 * speed_pct)), RAMP)
+    api.roll(heading, 0, BRAKE)
 
-    joystick = pygame.joystick.Joystick(joystickID)
-    joystick.init()
+def calibrate_zero(api: SpheroEduAPI):
+    print("Calibration: 0° then ENTER")
+    try:
+        api.start_calibration()
+    except Exception:
+        pass
+    input()
+    try:
+        api.finish_calibration()
+    except Exception:
+        api.set_heading(0)
+    print("0°\n")
 
-    sphero_color = Color(255, 0, 0)
-    sphero_controller = SpheroController(joystick, sphero_color, playerID)
+def run_lap(api: SpheroEduAPI, segments_cm, headings, cmps: float, speed_pct: int):
+    api.set_stabilization(True)
+    api.set_back_led(255)
+    api.set_main_led(LED_RUN)
 
-    if toy_name is None:
-        exit("No toy name provided")
+    # départ
+    for k in (3,2,1):
+        print(f"… {k}")
+        api.set_main_led(Color(255,255,0)); time.sleep(0.3)
+        api.set_main_led(Color(0,0,0));     time.sleep(0.4)
+    print("GO!")
+    api.set_main_led(LED_RUN)
 
-    sphero_controller.discover_toy(toy_name)
+    t0 = time.perf_counter()
+
+    for hdg, dist in zip(headings, segments_cm):
+        api.set_heading(hdg)   # virage instantané pour rester serré
+        secs = seconds_for_distance(dist, cmps)
+        print(f"→ {dist:.0f} cm @ {hdg:3d}°  (~{secs:.2f}s)")
+        gentle_roll(api, hdg, speed_pct, secs)
+
+    api.roll(0,0,0.1)
+    t1 = time.perf_counter()
+    lap = t1 - t0
+    api.set_back_led(0)
+    api.set_main_led(LED_OK)
+    print(f"\n⏱️  Lap time: {lap:.3f} s")
+    return lap
 
 
-    if sphero_controller.toy:
-        sphero_controller.control_toy()
+def main():
+    p = argparse.ArgumentParser(description="Sphero BOLT — Autonome ronde (horaire)")
+    p.add_argument("--name", required=True, help="Nom du SPHERO (ex: SB-9DD8)")
+    p.add_argument("--speed", type=int, default=SPEED_PCT_DEFAULT, help=" SPEED % (0–100)")
+    p.add_argument("--cmps", type=float, default=CM_PER_SEC_DEFAULT, help="cm/s")
+    p.add_argument("--segments", type=str, default=",".join(str(x) for x in SEGMENTS_CM),
+                   help="Segments in cm")
+    args = p.parse_args()
+
+    segments = [float(x) for x in args.segments.split(",") if x.strip()]
+    toy = find_toy(args.name)
+    if toy is None:
+        print(f"NO SPHERO '{args.name}'")
+        sys.exit(1)
+
+    print(f"Connected {toy.name}")
+    try:
+        with SpheroEduAPI(toy) as api:
+            api.set_main_led(LED_READY)
+            print_battery(api, toy.name)
+            calibrate_zero(api)
+            _ = run_lap(api, segments, HEADINGS, args.cmps, max(10, min(100, args.speed)))
+            api.set_main_led(LED_OK)
+    except KeyboardInterrupt:
+        try:
+            with SpheroEduAPI(toy) as api:
+                api.roll(0,0,0.2); api.set_main_led(LED_ERR)
+        except Exception:
+            pass
+        print("\n STOPPED")
+    except Exception as e:
+        print(f" Error {e}")
+        try:
+            with SpheroEduAPI(toy) as api:
+                api.roll(0,0,0.2); api.set_main_led(LED_ERR)
+        except Exception:
+            pass
+        sys.exit(2)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 4:
-        print("Usage: python script.py <toy_name> <joystickNumber 0-1> <player 1-5>")
-        sys.exit(1)
-    
-    toy_name = sys.argv[1]
-    joystick = int(sys.argv[2])
-    playerid = int(sys.argv[3])
-    print(f"Try to connect to: {toy_name} with number {joystick} for player {playerid}")
-    
-    main(toy_name, joystick, playerid)
+    main()

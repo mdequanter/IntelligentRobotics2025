@@ -78,8 +78,21 @@ void loop() {
     //velocity = drive(0,0,1);
     //velocity = drive(-50,50,1);
 
-    Serial.println("Turn clockwise");
-    turn(90);
-    delay(1000);  
+    //Serial.println("Turn clockwise");
+    //turn(90);
+
+    bool SW1State = getSW1State();
+    bool SW2State = getSW2State();
+
+    //Serial.println("States SW1/SW2:" + String(SW1State) + "/" + String(SW2State));
+
+    if (SW1State == 1) {
+      drive(50,-50,1);
+    }
+    if (SW2State == 1) {
+      drive(-50,50,1);
+    }
+
+    delay(100);  
 
 }
