@@ -3,7 +3,7 @@ import serial
 import time
 
 # Pas dit eventueel aan:
-PORT = "/dev/ttyUSB0"   # of /dev/ttyACM0, afhankelijk van jouw Arduino
+PORT = "/dev/ttyACM0"   # of /dev/ttyACM0, afhankelijk van jouw Arduino
 BAUD = 57600
 
 # Seriële poort openen
