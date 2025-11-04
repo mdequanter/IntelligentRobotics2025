@@ -43,7 +43,7 @@ bool getSW2State(){
 
 
 
-float getBatteryVoltage(void) {
+float getBatteryVoltage() {
   int raw = analogRead(BDPIN_BAT_PWR_ADC);
   float voltage = (float)raw / 56.01; // spanningsdeler x11
   return voltage;

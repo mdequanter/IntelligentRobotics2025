@@ -28,7 +28,7 @@
 
 DynamixelWorkbench dxl_wb;
 
-int maxSpeed = 100;
+int maxSpeed = 200;
 
 bool checkDynamixel() 
 {
