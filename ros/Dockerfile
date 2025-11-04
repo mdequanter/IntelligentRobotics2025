@@ -1,0 +1,55 @@
+# ===== Base: Ubuntu 24.04 (Noble) =====
+FROM ubuntu:24.04
+
+# Niet-interactief APT en basisinstellingen
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    ROS_DISTRO=jazzy
+
+SHELL ["/bin/bash", "-lc"]
+
+# ===== Systeem basics + locale =====
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      locales tzdata ca-certificates curl gnupg lsb-release software-properties-common \
+      build-essential git wget vim \
+    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+    && locale-gen en_US.UTF-8 \
+    && ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime && dpkg-reconfigure -f noninteractive tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# ===== ROS 2 repository toevoegen =====
+RUN apt-get update && apt-get install -y --no-install-recommends curl gnupg \
+    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+        | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+        http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+        > /etc/apt/sources.list.d/ros2.list \
+    && rm -rf /var/lib/apt/lists/*
+
+# ===== ROS 2 Jazzy (ros-base) installeren =====
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ros-jazzy-desktop \
+      python3-colcon-common-extensions \
+      python3-rosdep \
+    && rm -rf /var/lib/apt/lists/*
+
+# ===== rosdep initialiseren =====
+RUN rosdep init && rosdep update
+
+# ===== QoL: ROS automatisch sourcen =====
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc
+
+# ===== Optioneel: niet-root gebruiker =====
+# ARG USERNAME=rosuser
+# ARG USER_UID=1000
+# ARG USER_GID=$USER_UID
+# RUN groupadd --gid $USER_GID $USERNAME \
+#     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+#     && usermod -aG sudo $USERNAME \
+#     && echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USERNAME
+# USER $USERNAME
+
+# ===== Standaard command =====
+CMD ["/bin/bash"]
