@@ -1,0 +1,12 @@
+services:
+  ros2:
+    image: ros2-jazzy:ros2     # jouw lokale image:tag
+    container_name: ros2_jazzy
+    network_mode: host         # multicast discovery werkt dan zoals op de host
+    environment:
+      RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+      ROS_DOMAIN_ID: "0"
+      ROS_AUTOMATIC_DISCOVERY_RANGE: SUBNET
+    stdin_open: true
+    tty: true
+    command: bash
