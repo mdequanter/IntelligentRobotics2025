@@ -88,7 +88,7 @@ bool checkCriticalBattery(){
   float voltage = getBatteryVoltage();
   Serial.println("Executed: checkCriticalBattery ");
 
-  if (voltage < criticalVoltage) {
+  while (voltage < criticalVoltage) {
     tone(BDPIN_BUZZER, criticalNote, 100);
     return true;
   }
@@ -116,6 +116,11 @@ void loop() {
     if (millis() - lastBatteryCheck >= 60000) {
         lastBatteryCheck = millis();           // Reset timer
         criticalVoltage = checkCriticalBattery();  // Controleer opnieuw
+    }
+
+    while (criticalVoltage == true) {
+        criticalVoltage = checkCriticalBattery();  // Controleer opnieuw
+        delay(1000);
     }
 
     if (dynamixelStarted == false) {
