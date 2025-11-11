@@ -1,7 +1,7 @@
 import cv2
 
 # URL van de stream (pas aan indien nodig)
-url = "http://192.168.0.77:8000"
+url = "http://192.168.0.81:8000"
 
 # Open de video stream
 cap = cv2.VideoCapture(url)
